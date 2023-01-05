@@ -1,20 +1,30 @@
+import os
+import redis
+
 from flask import Flask, jsonify
 from flask_smorest import Api
-from resources.item import blp as ItemBlueprint
-from resources.store import blp as StoreBlueprint
-from resources.tag import blp as TagBlueprint
-from resources.user import blp as UserBlueprint
-from db import db
-import models
-import os
-from flask_jwt_extended import JWTManager
-from blocklist import BLOCKLIST
 from flask_migrate import Migrate
 from dotenv import load_dotenv
+from flask_jwt_extended import JWTManager
+from rq import Queue
+
+from db import db
+from blocklist import BLOCKLIST
+
+from resources.store import blp as StoreBlueprint
+from resources.item import blp as ItemBlueprint
+from resources.user import blp as UserBlueprint
+from resources.tag import blp as TagBlueprint
 
 def create_app(db_url=None):
     app = Flask(__name__)
     load_dotenv()
+
+    # connect to redis database for storing emails
+    connection = redis.from_url(
+        os.getenv("REDIS_URL")
+    )
+    app.queue = Queue("emails", connection=connection)
 
     # set up some configuration options
     app.config["PROPAGATE_EXCEPTIONS"] = True
